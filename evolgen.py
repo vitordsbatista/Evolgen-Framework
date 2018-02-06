@@ -9,11 +9,14 @@
 #===================================#
 
 import numpy as np
+import random as rd
 import matplotlib.pyplot as plt
 import create_pop as cp
 import fit_func as ff
 import selection as sl
 import crossover as cr
+import mutation as mt
+import copy
 
 class Evolgen:
     """Framework para a utilização e criação de algoritmos evolutivos
@@ -39,13 +42,20 @@ class Evolgen:
     cross_alg_switcher = {
         'op': cr.one_point
     }
+    mut_switcher = {
+        'ru': mt.random_uniform
+    }
+
+    best = []
+    mean = []
 
     #Função de inicialização
     def __init__(self, 
                  pop=False, pop_size=100, ind_type='int', 
                  ind_func=[], ind_size=2, ind_range=[-10, 10],
                  fit='fon', sel='tour', cross='two',
-                 cross_alg='op', tour=0.8, cross_ix=0.7):
+                 cross_alg='op', tour=0.8, cross_ix=0.7,
+                 mut='ru', mut_ind=0.03, gen=100):
         self.pop = pop              #População inicial
         self.pop_size = pop_size    #Tamanho da população
         self.ind_type = ind_type    #Tipo do ind('int', 'float', 'bin', 'other')
@@ -60,6 +70,9 @@ class Evolgen:
         self.cross = cross          #Método de cruzamento
         self.cross_alg = cross_alg  #Algoritmo de cruzamento
         self.cross_ix = cross_ix
+        self.mut = mut
+        self.mut_ind = mut_ind
+        self.gen = gen
 
         #======================================================================#
         #Verifica se o fit é uma função ou um str
@@ -67,7 +80,8 @@ class Evolgen:
         if type(self.fit_par) == str:
             self.fit = self.fit_switcher.get(self.fit_par)
             if self.fit == None:
-                raise "Não existe uma função com o nome", self.fit_par
+                raise ValueError("Não existe uma função com o nome",
+                                 self.fit_par)
         elif callable(self.fit_par):                    #É uma função
             self.fit = self.fit_par
 
@@ -76,7 +90,7 @@ class Evolgen:
         if type(self.sel) == str:
             self.selection = self.sel_switcher.get(self.sel)
             if self.selection == None:
-                raise "Não existe uma função com o nome", self.sel
+                raise ValueError("Não existe uma função com o nome", self.sel)
         elif callable(self.sel):                    #É uma função
             self.selection = self.sel
 
@@ -85,7 +99,8 @@ class Evolgen:
         if type(self.cross) == str:
             self.crossover = self.cross_switcher.get(self.cross)
             if self.crossover == None:
-                raise "não existe uma função com o nome", self.cross
+                raise ValueError("não existe uma função com o nome",
+                                 self.cross)
         elif callable(self.cross):                    #é uma função
             self.crossover = self.cross
 
@@ -94,9 +109,19 @@ class Evolgen:
         if type(self.cross_alg) == str:
             self.ca = self.cross_alg_switcher.get(self.cross_alg)
             if self.ca == None:
-                raise "não existe uma função com o nome", self.cross_alg
+                raise ValueError("não existe uma função com o nome",
+                                 self.cross_alg)
         elif callable(self.cross_agl):                    #é uma função
             self.ca = self.cross_alg
+        #======================================================================#
+        #verifica o algoritmo de mutação
+        if type(self.mut) == str:
+            self.mutation = self.mut_switcher.get(self.mut)
+            if self.mutation == None:
+                raise ValueError("não existe uma função com o nome",
+                                 self.mut)
+        elif callable(self.mut):                    #é uma função
+            self.mutation = self.mut
 
     def create_ini_pop(self):
         #Se não existir população inicial
@@ -138,9 +163,38 @@ class Evolgen:
             for i in f:
                 self.fitness.append(map(self.fit, self.pop))
 
+    def mut_pop(self, pop, mut):
+        """Realiza a mutação em um indivíduo
+        TODO: comentar direito
+        """
+        pop_out = copy.deepcopy(pop)
+        for n, i in enumerate(pop_out):
+            r = rd.random()
+            if mut > r:
+                i_mut = self.mutation(i, self.ind_range)
+                pop_out[n] = i_mut
+        return pop_out
+
     def run(self):
         """Loop principal"""
-        pass
+        self.create_ini_pop()                 #Criação da população inicial 
+        self.run_fit()                        #Avaliação da população inicial
+        for i in range(self.gen):
+            self.pop = self.selection(self.pop,     #Seleção
+                                  self.fitness, 
+                                  self.tour, 
+                                  self.pop_size)
+            self.pop = self.crossover(self.pop,     #Cruzamento
+                                  self.pop_size, 
+                                  self.cross_ix, 
+                                  self.ca)
+            self.pop = self.mut_pop(self.pop,       #Mutação
+                                self.mut_ind)
+            self.run_fit()
+            self.best.append(min(self.fitness))
+            self.mean.append(sum(self.fitness)/self.pop_size)
+            print 'Geração', i, 'best', min(self.fitness)
+
     def res(self):
         print 'Gerações:', self.gen
         print 'Taxa de cruzamento:', self.cross
@@ -159,20 +213,16 @@ class Evolgen:
         print 'tamanho do ind', self.ind_size
         print 'range do ind', self.ind_range
         """
-        print 'pop', len(self.pop)
-        print 'fit 1', len(self.fitness)
-        pop2 = self.selection(self.pop, self.fitness, self.tour, self.pop_size)
-        pop3 = self.crossover(pop2, self.pop_size, self.cross_ix, self.ca)
         print '======'
-        print 'pop2', len(pop2)
-        print 'pop3', len(pop3)
-
+        print pop3[7]
+        print pop4[7]
 
     def plot(self):
-        pass
+        plt.plot(self.best)
+        plt.plot(self.mean)
+        plt.show()
 
-eg = Evolgen(ind_type='float', ind_range=[-100, 100], fit='sch2', tour=0.7)
-eg.create_ini_pop()
-eg.run_fit()
-eg.out()
-#Testes
+eg = Evolgen(ind_type='float', ind_range=[-100, 100], fit='sch2', tour=0.7, 
+             mut_ind=0.1)
+eg.run()
+eg.plot()
