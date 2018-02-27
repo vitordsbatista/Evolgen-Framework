@@ -74,3 +74,48 @@ egg = egg.evolgen(has_pop=True, population=sua_populacao,
                                 fit_func=[fit.pol_f1, fit.pol_f2], 
                                 outros_parametros)
 ```
+### Operadores genéticos/evolutivos e seus parâmetros
+
+Quase finalizando, agora você deve passar os operadores genéticos/evolutivos que o evolgen irá executar. Neste caso você vai ter que passar duas (2) listas, uma dos operadores evolutivos e a outra com os seus respectivos parâmetros. Existe uma lista com todos os algoritmos já feitos por mim, e pelos usuários, e seus parâmetros, basta clicar (*AQUI*)
+
+#### Lista com os operadores
+Esta é uma lista de *strings* contendo as siglas da sequência dos operadores que o programa irá executar. Por exemplo, para um 
+algoritmo evolutivo normal, com seleção por torneio, cruzamento de um ponto, e mutação uniformemente aleatória, basta ter uma 
+lista da seguinte forma:
+
+```python
+ope = ['sto',       #Seleção por torneio
+       'cop',       #Cruzamento por um ponto
+       'mru']       #Mutação uniformemente aleatória
+```
+#### Lista com os parâmetros dos operadores
+Esta é uma lista de listas (alguns chamam de matriz), contendo os parâmetros de cada um dos operadores. Caso um operador não possua parâmetros, no lugar dele basta passar uma lista vazia, exemplo:
+```python
+#Parâmtros para os operadores acima
+ope_par = [[0.8],       #Parâmentro da seleção por torneio
+           [0.7],       #Parâmetros do cruzamento por um ponto
+           [0.03]]      #Parâmetro da mutação uniformemente aleatória
+
+#Exemplo de parâmetros vazios
+ope_par = [[],          #Parâmetro vazio
+           [0.4],       #Outros parâmetros
+           [22]]        #Outros parâmetros
+```
+
+#### Passando para o evolgen
+Terminando de realizar as escolhas dos operadores e de seus parâmetros, basta passar todos esses valores para o evolgen da seguinte forma:
+
+```python
+egg = egg.evolgen(has_pop=True, population=sua_populacao, 
+                                fit_func=[sua_funcao_fitness], 
+                                fun=ope, parm=ope_par, outros_parâmentros)
+```
+### Número de gerações
+Para finalizar, basta apenas informar o número de gerações para o programa:
+```python
+egg = egg.evolgen(has_pop=True, population=sua_populacao, 
+                                fit_func=[sua_funcao_fitness], 
+                                fun=ope, parm=ope_par, generations=1000)
+```
+
+Agora você pode executar o seu programa. Se ainda possui alguma dúvida, dê uma olhada nos exemplos abaixo e sinta-se livre para perguntar.
