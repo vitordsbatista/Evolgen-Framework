@@ -172,3 +172,4 @@ egg = Evolgen(has_pop=False, population=[pop_size, ind_size,
               par=parm, fun=fun, fit=fit_func, gen=1000)
 egg.run()
 egg.plot()
+print 33
