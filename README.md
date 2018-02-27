@@ -123,7 +123,45 @@ Agora você pode executar o seu programa. Se ainda possui alguma dúvida, dê um
 ## Exemplos
 #### AG básico para a resolução da função de Schaffer Nº 2
 ##### Função
-
+![alt text](https://github.com/vitordsbatista/Evolgen-Framework/blob/master/figures/schaffer22_function.png "Função Schaffer Nº 2. Fonte: https://www.sfu.ca/~ssurjano/index.html")
+##### Plot da função
+![alt text](https://github.com/vitordsbatista/Evolgen-Framework/blob/master/figures/schaffer2_plot.png "Função Schaffer Nº 2. Fonte: https://www.sfu.ca/~ssurjano/index.html")
 ##### Fluxograma
+![alt text](https://github.com/vitordsbatista/Evolgen-Framework/blob/master/figures/fluxo_1.png "Fluxograma do GA")
+##### Código
 ```python
+import numpy as np
+import evolgen
+
+def sch2(self, ind):
+    x, y = ind
+    n = np.sin(x**2+y**2)**2 - 0.5
+    d = (1.+0.001*(x**2 + y**2))**2
+    res = 0.5 + n/d
+    return res
+
+pop_size = 100                          #Tamanho da população
+ind_size = 2                            #Tamanho do indivíduo
+ind_range = [-100, 100]                 #Intervalo do indivíduo
+ind_type = 'float'                      #Tipo do indivíduo
+pop_parm = [pop_size, ind_size,         #Lista com os parâmetros de criação da população
+            ind_range, ind_type]
+            
+fun = ['sto', 'cop', 'mru']             #Lista com os operadores genéticos
+
+par_sel = [0.8, pop_size]               #Parâmetros da seleção
+par_cruz = [0.8, pop_size]              #Parâmetros do cruzamento
+par_mut = [0.03, [-100, 100]]           #Parâmetros da mutação
+parm = [par_sel, par_cruz, par_mut]     #Lista com os parâmetros
+
+fit_func = [sch2]                       #Função de avaliação
+
+egg = egg.evolgen(has_pop=False,        #Inicialização do evolgen
+      population=[pop_size, ind_size,
+                  ind_range, 'float'],
+      par=parm, fun=fun, fit=fit_func, 
+      gen=1000)
+      
+egg.run()                               #Execução do programa
+egg.plot()                              #Plot do gráfico gen x fit (disponível somente para problemas monoobjetivos)
 ```
