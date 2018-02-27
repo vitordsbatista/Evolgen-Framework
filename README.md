@@ -33,6 +33,44 @@ egg = egg.evolgen(has_pop=False, population=[pop_size, ind_size, ind_range, ind_
 ```
 *NOTA: os outros_parametros serão explicados a seguir, não execute seu código ainda*
 
+### Função de avaliação
+Você deve passar a função de avaliação (*fitness*) para o programa, ela é obrigatória!
 
+#### Modelo de função objetivo
+As funções objetivo devem seguir o modelo abaixo para que o evolgen execute normalmente
 
-Para isso, eu criei algumas regras na hora da criação dos operadores 
+```python
+def sua_funcao(self, ind):          #Ela irá apenas ler um indivíduo, e não uma população
+    #Agora vem a sua função avaliando apenas um indivíduo (tenha isso em mente)
+    x, y = ind                      #Descompactando o indivíduo (opcional)
+    res = x**2 + y**2               #Faça o que você quiser para avaliar
+    return res                      #Saída da função, deve ser apenas um valor
+```
+*Nota: o 'self' passado na sua_funcao é uma palavra reservada da POO (Programação Orientada a Objetos) do pyhton, ela será utilizada para passar algum valor que você precise para fazer a avaliação do indivíduo, mas não está relacionado à população, clique aqui para saber mais*
+
+#### Passagem de parâmetro
+A função de avaliação como parâmetro deve ser uma lista (por causa do multiobjetivo). Se você têm apenas uma função de avaliação, basta passar ela como uma lista unitária, e se for multiobjetivo, basta passar como parâmetro todas as funções objetivo numa lista:
+
+```python
+#Apenas uma função objetivo
+egg = egg.evolgen(has_pop=True, population=sua_populacao, 
+                                fit_func=[sua_funcao_fitness], 
+                                outros_parametros)
+
+#Mais de uma função objetivo
+egg = egg.evolgen(has_pop=True, population=sua_populacao, 
+                                fit_func=[sua_funcao_1, sua_funcao_2, sua_funcao_3], 
+                                outros_parametros)
+```
+#### Bônus
+O evolgen fornece algumas funções de avaliação para você brincar um pouco (vou acrescentando mais quando der), basta importar elas do arquivo *fit_func.py* e passar elas como parâmetro.
+
+A lista completa de funções de avaliação pode ser encontrada (*AQUI*)
+
+```python
+import fit_func as fit
+#Exemplo multiobjetivo
+egg = egg.evolgen(has_pop=True, population=sua_populacao, 
+                                fit_func=[fit.pol_f1, fit.pol_f2], 
+                                outros_parametros)
+```
