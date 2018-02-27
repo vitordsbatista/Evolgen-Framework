@@ -12,11 +12,10 @@ import numpy as np
 import random as rd
 import matplotlib.pyplot as plt
 import create_pop as cp
-import fit_func as ff
-import selection as sl
-import crossover as cr
-import mutation as mt
 import copy
+import inspect
+import fit_func as fit
+import functions as f
 
 class Evolgen:
     """Framework para a utilização e criação de algoritmos evolutivos
@@ -25,204 +24,151 @@ class Evolgen:
     pop     - list - população dos indivíduos (cada item é um indivíduo)
     fitness - list - aptidão dos indivíduos (cada item corresponde a um ind)
     """
-
-    #==========================================================================#
-    #Switchers
-    #==========================================================================#
-    fit_switcher = {
-        'fon': [ff.fon_f1, ff.fon_f2],
-        'sch2': ff.sch2
-    }
-    sel_switcher = {
-        'tour': sl.tournament
-    }
-    cross_switcher = {
-        'two': cr.cross_two
-    }
-    cross_alg_switcher = {
-        'op': cr.one_point
-    }
-    mut_switcher = {
-        'ru': mt.random_uniform
-    }
-
+    global best
+    global mean 
     best = []
     mean = []
-
     #Função de inicialização
-    def __init__(self, 
-                 pop=False, pop_size=100, ind_type='int', 
-                 ind_func=[], ind_size=2, ind_range=[-10, 10],
-                 fit='fon', sel='tour', cross='two',
-                 cross_alg='op', tour=0.8, cross_ix=0.7,
-                 mut='ru', mut_ind=0.03, gen=100):
-        self.pop = pop              #População inicial
-        self.pop_size = pop_size    #Tamanho da população
-        self.ind_type = ind_type    #Tipo do ind('int', 'float', 'bin', 'other')
-        self.ind_func = ind_func    #Função de criação dos indivíduos 
-        self.ind_size = ind_size    #Tamanho dos indivíduos
-        self.ind_range = ind_range  #Intervalo dos indivíduos
-        #======================================================================#
-        self.fit_par = fit          #Parâmetro da função de aptidão
-        #TODO: encontrar uma forma de organizar os parâmetros não genérios
-        self.tour = tour            #Taxa do torneio
-        self.sel = sel              #Algoritmo de seleção
-        self.cross = cross          #Método de cruzamento
-        self.cross_alg = cross_alg  #Algoritmo de cruzamento
-        self.cross_ix = cross_ix
-        self.mut = mut
-        self.mut_ind = mut_ind
+    def __init__(self, has_pop=False, population=[100, 2, 'int', [-10, 10]], 
+                 par=[], fun=[], fit=[], gen=100, aux_func=[], **kwargs):
+        if has_pop:
+            self.pop = population
+        else:
+            self.create_pop(population)
+        self.par = par
         self.gen = gen
+        self.fit_func = fit
+        self.aux_func = aux_func
+        self.aux = [[], []]
+        #Tratamento dos parâmetros passados acima
+        self.func_dict = dict(inspect.getmembers(f, inspect.isfunction))
+        for i in fun:
+            if not self.func_dict.has_key(i):
+                raise ValueError("Does not exist any function called "+i)
+        self.fun = fun
+        self.kwargs = kwargs
 
-        #======================================================================#
-        #Verifica se o fit é uma função ou um str
-        self.fit = [] 
-        if type(self.fit_par) == str:
-            self.fit = self.fit_switcher.get(self.fit_par)
-            if self.fit == None:
-                raise ValueError("Não existe uma função com o nome",
-                                 self.fit_par)
-        elif callable(self.fit_par):                    #É uma função
-            self.fit = self.fit_par
-
-        #======================================================================#
-        #Verifica o algoritmo de seleção
-        if type(self.sel) == str:
-            self.selection = self.sel_switcher.get(self.sel)
-            if self.selection == None:
-                raise ValueError("Não existe uma função com o nome", self.sel)
-        elif callable(self.sel):                    #É uma função
-            self.selection = self.sel
-
-        #======================================================================#
-        #verifica o método de cruzamento
-        if type(self.cross) == str:
-            self.crossover = self.cross_switcher.get(self.cross)
-            if self.crossover == None:
-                raise ValueError("não existe uma função com o nome",
-                                 self.cross)
-        elif callable(self.cross):                    #é uma função
-            self.crossover = self.cross
-
-        #======================================================================#
-        #verifica o algoritmo de cruzamento
-        if type(self.cross_alg) == str:
-            self.ca = self.cross_alg_switcher.get(self.cross_alg)
-            if self.ca == None:
-                raise ValueError("não existe uma função com o nome",
-                                 self.cross_alg)
-        elif callable(self.cross_agl):                    #é uma função
-            self.ca = self.cross_alg
-        #======================================================================#
-        #verifica o algoritmo de mutação
-        if type(self.mut) == str:
-            self.mutation = self.mut_switcher.get(self.mut)
-            if self.mutation == None:
-                raise ValueError("não existe uma função com o nome",
-                                 self.mut)
-        elif callable(self.mut):                    #é uma função
-            self.mutation = self.mut
-
-    def create_ini_pop(self):
+    def create_pop(self, parm):
         #Se não existir população inicial
-        if not self.pop:
-            #O programa irá criar uma população...
-            if self.ind_type == 'int':               #de inteiros
-                self.pop = cp.pop_int(
-                                self.pop_size,
-                                self.ind_range,
-                                self.ind_size)
-            elif self.ind_type == 'float':           #de float 
-                self.pop = cp.pop_float(
-                                self.pop_size,
-                                self.ind_range,
-                                self.ind_size)
-            elif self.ind_type == 'bin':             #binária
-                self.pop = cp.pop_bin(
-                                self.pop_size,
-                                self.ind_range,
-                                self.ind_size)
-            elif self.ind_type == 'other':           #com a função passada
-                self.pop = self.ind_func(
-                                self.pop_size,
-                                self.ind_range,
-                                self.ind_size)
-        """
-        #TODO: colocar mais argumentos na função passada
-        TODO: criar um arquivo com todas as funções de criação da população
-        inicial, e a medida que forem desenvolvidas novas funções, colcoar
-        nela
-        """
-    def run_fit(self):
-        #TODO: Verificar se a f executa tranquilamente na população e
-        #retornar isso
-        #Executa a fit na população
-        if callable(self.fit):                      #Função única
-            self.fitness = map(self.fit, self.pop)
-        else:                                       #Multiobjetivo
-            for i in f:
-                self.fitness.append(map(self.fit, self.pop))
-
-    def mut_pop(self, pop, mut):
-        """Realiza a mutação em um indivíduo
-        TODO: comentar direito
-        """
-        pop_out = copy.deepcopy(pop)
-        for n, i in enumerate(pop_out):
-            r = rd.random()
-            if mut > r:
-                i_mut = self.mutation(i, self.ind_range)
-                pop_out[n] = i_mut
-        return pop_out
+        pop_size = parm[0]
+        ind_size = parm[1]
+        ind_range = parm[2]
+        ind_type = parm[3]
+        #O programa irá criar uma população...
+        if ind_type == 'int':               #de inteiros
+            self.pop = cp.pop_int(
+                            pop_size,
+                            ind_range,
+                            ind_size)
+        elif ind_type == 'float':           #de float 
+            self.pop = cp.pop_float(
+                            pop_size,
+                            ind_range,
+                            ind_size)
+        elif ind_type == 'bin':             #binária
+            self.pop = cp.pop_bin(
+                            pop_size,
+                            ind_range,
+                            ind_size)
 
     def run(self):
         """Loop principal"""
-        self.create_ini_pop()                 #Criação da população inicial 
-        self.run_fit()                        #Avaliação da população inicial
-        for i in range(self.gen):
-            self.pop = self.selection(self.pop,     #Seleção
-                                  self.fitness, 
-                                  self.tour, 
-                                  self.pop_size)
-            self.pop = self.crossover(self.pop,     #Cruzamento
-                                  self.pop_size, 
-                                  self.cross_ix, 
-                                  self.ca)
-            self.pop = self.mut_pop(self.pop,       #Mutação
-                                self.mut_ind)
-            self.run_fit()
-            self.best.append(min(self.fitness))
-            self.mean.append(sum(self.fitness)/self.pop_size)
-            print 'Geração', i, 'best', min(self.fitness)
-
-    def res(self):
-        print 'Gerações:', self.gen
-        print 'Taxa de cruzamento:', self.cross
-        print 'Taxa de mutação:', self.mut
-        print 'Tamanho da população:', self.pop_size
-        print 'Tamanho do indivíduo:', self.ind_size
-        print 'Intervalo do indivíduo:', self.ind_range
-        print 'Número de funções:', len(self.fits)
-
-    def out(self):
-        """
-        print 'População', self.pop
-        print 'n de inds', self.ind_num
-        print 'tipo do ind', self.ind_type
-        print 'função do ind', self.ind_func
-        print 'tamanho do ind', self.ind_size
-        print 'range do ind', self.ind_range
-        """
-        print '======'
-        print pop3[7]
-        print pop4[7]
-
+        mo = True
+        for i in range(self.gen):                   #Gerações
+            for fu, p in zip(self.fun, self.par):    #Laço com as funções
+                self.func_dict[fu](self, p)          #Excecuta as funções
+            #Alterar para caso o problema seja multiobjetivo
+            if mo:
+                print 'Geração', i
+            else:
+                best.append(min(self.fit))
+                mean.append(sum(self.fit)/len(self.fit))
+                print 'Geração', i, 'best', best[-1]
+        if mo:
+            #Colocar as fitness e não os indivíduos do front
+            tmp = f.non_dom_sort(self, self.pop) 
+            self.best_front = f.calc_fit(self, tmp)
+            print self.best_front
     def plot(self):
-        plt.plot(self.best)
-        plt.plot(self.mean)
+        #Alterar para caso o problema seja multiobjetivo
+        mo = True
+        if mo:
+            """
+            for i in self.best_front:
+                plt.plot(i[0], i[1], 'o', color='r')
+            """
+            fronts = dict()
+            pop = self.pop
+            i=0
+            while any(pop):                      #Enquanto existir algo na pop
+                tmp = f.non_dom_sort(self, pop)    #Front não dominado
+                for j in tmp:                    
+                    if j in pop:
+                        pop.remove(j)            #Remove o front da população
+                fronts[i] = tmp                  #Adiciona ele no dicionario
+                i += 1                           #Incrementa o contador
+            for i in range(1,len(fronts)):
+                for j in fronts[i]:
+                    k = []
+                    for fu in self.fit_func:
+                        k.append(fu(self, j))
+                    plt.plot(k[0], k[1], 'o', color='b')
+                plt.plot(k[0], k[1], 'o', color='b')
+            #Plot do fornt f0, fiz isso pq existem alguns ind que ficam em 
+            #dois fronts, e assim o f0 sempre fica em destaque
+            for i in fronts[0]:
+                k = []
+                for fu in self.fit_func:
+                    k.append(fu(self, i))
+                plt.plot(k[0], k[1], 'o', color='r')
+            plt.plot(k[0], k[1], 'o', color='r', label='f0')
+            plt.legend(loc='best')                          #Legenda do plot
+        else:
+            plt.plot(best)
+            plt.plot(mean)
         plt.show()
 
-eg = Evolgen(ind_type='float', ind_range=[-100, 100], fit='sch2', tour=0.7, 
-             mut_ind=0.1)
-eg.run()
-eg.plot()
+
+
+"""
+pop_size = 100
+ind_size = 100
+ind_range = [0, 1]
+par_sel = [0.8, pop_size]
+par_cruz = [0.7, pop_size]
+par_mut = [0.1, ind_range]
+parm = [par_sel, par_cruz, par_mut]
+fun = ['sto', 'cop', 'mru']
+fit_func = [fit.fem]
+
+train = np.load('train_10x10.npy')
+test = np.load('test_10x10.npy')
+
+l_train = np.load('train_label.npy')
+l_test = np.load('test_label.npy')
+
+top = [100, 10, 1]
+egg = Evolgen(has_pop=False, population=[pop_size, ind_size, 
+                                         ind_range, 'float'], 
+              par=parm, fun=fun, fit=fit_func, gen=100, 
+              ann = [top, train, l_train])
+egg.run()
+"""
+#=================#
+pop_size = 100
+ind_size = 2
+ind_range = [-100, 100]
+ind_range = [-np.pi, np.pi]
+par_sel = [0.8, pop_size]
+par_cruz = [0.8, pop_size]
+par_mut = [0.03, [-100, 100]]
+parm = [par_sel, par_cruz, par_mut]
+#fun = ['sto', 'cop', 'mru']
+fun = ['fcd', 'cop', 'mru']
+fit_func = [fit.f1, fit.f2]
+fit_func = [fit.pol_f1, fit.pol_f2]
+egg = Evolgen(has_pop=False, population=[pop_size, ind_size, 
+                                         ind_range, 'float'], 
+              par=parm, fun=fun, fit=fit_func, gen=1000)
+egg.run()
+egg.plot()
