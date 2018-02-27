@@ -119,3 +119,11 @@ egg = egg.evolgen(has_pop=True, population=sua_populacao,
 ```
 
 Agora você pode executar o seu programa. Se ainda possui alguma dúvida, dê uma olhada nos exemplos abaixo e sinta-se livre para perguntar.
+
+## Exemplos
+#### AG básico para a resolução da função de Schaffer Nº 2
+##### Função
+
+##### Fluxograma
+```python
+```
