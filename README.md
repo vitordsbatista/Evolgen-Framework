@@ -1,6 +1,7 @@
 # Evolgen-Framework
 Framework para o auxílio no desenvolvimento de algoritmos evolutivos
 
+EM DESENVOLVIMENTO (TÔ QUASE TERMINANDO)
 Eu fiz esse framework para poder brincar com os parâmetros operadores genéticos/evolutivos de alguns algoritmos evolutivos, sem ter muito trabalho, como exemplo trocar o operador de cruzamento de um NSGA-II, ou transformar um GA (genetic algorithm) num ES (evolutionary strategies) e até mesmo fazer algum algoritmo maluco misturando PAES e SPEA num só programa sem muito esforço.
 
 ## Requisitos

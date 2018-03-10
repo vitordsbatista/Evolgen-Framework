@@ -33,8 +33,15 @@ class Evolgen:
                  par=[], fun=[], fit=[], gen=100, aux_func=[], **kwargs):
         if has_pop:
             self.pop = population
+            self.pop_size = len(population)
+            self.ind_size = len(population[0])
+            self.ind_range = [np.min(population), np.max(population)]
         else:
             self.create_pop(population)
+            self.pop_size = population[0]
+            self.ind_size = population[1]
+            self.ind_type = population[2]
+            self.ind_range = population[3]
         self.par = par
         self.gen = gen
         self.fit_func = fit
